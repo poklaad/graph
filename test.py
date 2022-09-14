@@ -1,9 +1,14 @@
-FILENAME = 'CA-AstroPh.txt'
-LANDMARKS_COUNT = range(20, 101, 40)
+FILENAME = 'vk2.txt'
+LANDMARKS_COUNT = range(5, 16, 5)
 import datetime as tm
+import time
 import random
 import csv
 import collections
+import numpy as np
+import matplotlib
+#matplotlib.use('Qt5Agg')
+import matplotlib.pyplot as plt
 
 #-------------------запись графа-----------------------------
 from operator import truediv
@@ -15,7 +20,10 @@ def read_from_txt(filename):
         row = file.readline()
         while row:
 
-            parent, child = row.split()
+            if filename != 'vk2.txt':
+                parent, child = row.split()
+            else:
+                parent, child, _, __ = row.split()
             parent = int(parent)
             child = int(child)
 
@@ -28,7 +36,7 @@ def read_from_txt(filename):
                     'linked': [child],
                     'degree': 1,
                     'visit': '',
-                    'shortest_paths':{},
+                    'shortest_pathes':{},
                 }
 
 
@@ -42,107 +50,72 @@ def read_from_txt(filename):
                     'linked': [parent],
                     'degree': 1,
                     'visit': '',
-                    'shortest_paths':{},
+                    'shortest_pathes':{},
                 }
 
             row = file.readline()
 
     return graph
-
-
-#-------------------------bfs--------------------------------
-def bfs_color(start, finish, graph, marks):
-    tic = tm.datetime.now()
-    for i in graph:
-        graph[i]['visit'] = 0
-    for i in marks:
-        graph[i]['visit'] = 1
-    graph[start]['visit'] = 1
-    found = False
-    queue = [start]
-    pathes = {}
-    pathes [start] = [start]
-    while queue:
-        a = queue[0]
-        queue.pop(0)
-        for i in graph[a]['linked']:
-            if graph[i]['visit'] == 0:
-                graph[i]['visit'] = 1
-                queue.append(i)
-                p = pathes[a].copy()
-                p.append(i)
-                pathes[i] = []
-                pathes[i] = p
-                if i == finish:
-                    found = True
-                    path = pathes[i]
-                    return path, (tm.datetime.now() - tic).total_seconds()
-
-    return -1, (tm.datetime.now() - tic).total_seconds()
-
-def bfs_color1(start, finish, graph, marks):
-    for i in graph:
-        graph[i]['visit'] = 0
-    for i in marks:
-        graph[i]['visit'] = 1
-    graph[start]['visit'] = 1
-    found = False
-    queue = [start]
-    pathes = {}
-    pathes [start] = [start]
-    while queue:
-        a = queue[0]
-        queue.pop(0)
-        for i in graph[a]['linked']:
-            if graph[i]['visit'] == 0:
-                graph[i]['visit'] = 1
-                queue.append(i)
-                p = pathes[a].copy()
-                p.append(i)
-                pathes[i] = []
-                pathes[i] = p
-                if i == finish:
-                    found = True
-                    path = pathes[i]
-                    graph[start]['shortest_paths'][i] = path
-                    return path
-
-    graph[start]['shortest_paths'][finish] = -1
-    return -1
-
 #------------------------------------------------------------
 
+#-------------------------bfs--------------------------------
+def bfs_color(start, finish, graph, write = False):
+    tic = time.perf_counter()
+    for i in graph:
+        graph[i]['visit'] = 0
+    graph[start]['visit'] = 1
+    found = False
+    queue = [start]
+    pathes = {}
+    pathes [start] = [start]
+    while queue:
+        a = queue[0]
+        queue.pop(0)
+        for i in graph[a]['linked']:
+            if graph[i]['visit'] == 0:
+                graph[i]['visit'] = 1
+                queue.append(i)
+                p = pathes[a].copy()
+                p.append(i)
+                pathes[i] = []
+                pathes[i] = p
+                if i == finish:
+                    found = True
+                    path = pathes[i]
+                    if write:
+                        graph[start]['shortest_pathes'][i] = path
+                    return path, (time.perf_counter() - tic)
+    if write:
+        graph[start]['shortest_pathes'][finish] = -1
+    return -1, (time.perf_counter() - tic)
+#------------------------------------------------------------
 
+#-----------------------basic--------------------------------
 def landmarks_basic(start, finish, marks, graph):
-    tic = tm.datetime.now()
+    tic = time.perf_counter()
     size_min_path = len(graph) + 1
     min_path = []
     for i in marks:
-        path1 = graph[start]['shortest_paths'][i]
-        
-        path2 = graph[finish]['shortest_paths'][i]
+        path1 = graph[start]['shortest_pathes'][i]
+        path2 = graph[finish]['shortest_pathes'][i]
 
         if path1 != -1 and path2 != -1:
-            if len(path1) + len(path2) < size_min_path:
+            if len(path1) + len(path2) - 1 < size_min_path:
                 min_path = path1 + path2[1:]
                 size_min_path = len(min_path)
 
     if min_path == []:
-        return -1, (tm.datetime.now() - tic).total_seconds()
+        return -1, (time.perf_counter() - tic)
     else:
-        return min_path, (tm.datetime.now() - tic).total_seconds()
-
-
-
-
+        return min_path, (time.perf_counter() - tic)
 #------------------------------------------------------------
 
-
+#--------------------landmark bfs----------------------------
 def landmarks_bfs(start, finish, graph, marks):
-    start_time= tm.datetime.now()
+    start_time= time.perf_counter()
     little_graph = {}
-    start_path = graph[start]['shortest_paths']
-    finish_path = graph[finish]['shortest_paths']
+    start_path = graph[start]['shortest_pathes']
+    finish_path = graph[finish]['shortest_pathes']
 
     for mark, path in list(start_path.items()) + list(finish_path.items()):
         if path == -1 or path == []:
@@ -170,45 +143,45 @@ def landmarks_bfs(start, finish, graph, marks):
                     'visit': ''
                 }
     if len(little_graph) == 0 or start not in little_graph or finish not in little_graph:
-        return -1, (tm.datetime.now() - start_time).total_seconds()
+        return -1, (time.perf_counter() - start_time)
     else:
-        path, _ = bfs_color(start, finish, little_graph, [])
-        return path, (tm.datetime.now() - start_time).total_seconds()
+        path, _ = bfs_color(start, finish, little_graph)
+        return path, (time.perf_counter() - start_time)
+#------------------------------------------------------------
 
-
-
+#---------------поиск путей (для подграфа)-------------------
 def landmarks_pathes (start, finish, graph, marks):
-    tic = tm.datetime.now()
+    tic = time.perf_counter()
     for i in marks:
-        path1 = bfs_color1(start, i, graph, [])
-        path2 = bfs_color1(finish, i, graph, [])
+        path1, time_ = bfs_color(start, i, graph, True)
+        path2, time_ = bfs_color(finish, i, graph, True)
         if path2 != -1:
             path2.reverse()
-    return (tm.datetime.now() - tic).total_seconds()
-
+    return (time.perf_counter() - tic)
+#-----------------------------------------------------------
 
 #--------------------выбор марок----------------------------
 def choose_random(nodes, count_landmarks):
-    start_time= tm.datetime.now()
+    start_time= time.perf_counter()
     marks = random.sample(nodes, count_landmarks)
-    return marks, (tm.datetime.now() - start_time).total_seconds()
+    return marks, (time.perf_counter() - start_time)
 
 def choose_dergee(nodes, count_landmarks):
-    start_time= tm.datetime.now()
+    start_time= time.perf_counter()
     marks = nodes[:count_landmarks]
-    return marks, (tm.datetime.now() - start_time).total_seconds()
+    return marks, (time.perf_counter() - start_time)
 
-def choose_coverege(nodes, count_landmarks, graph):
-    start_time= tm.datetime.now()
+def choose_coverege(nodes, landmarks_count, graph):
+    start_time= time.perf_counter()
     number_of_uses = {}
     while len(number_of_uses) < landmarks_count:
         uses_part = {}
-        rand_nod = random.sample(nodes, 2*count_landmarks)
+        rand_nod = random.sample(nodes, 2*landmarks_count)
         start_nod = rand_nod[:landmarks_count]
         finish_nod = rand_nod[landmarks_count:]
         for i, j in zip(start_nod, finish_nod):
             #used_nodes - список с номерами вершин, которые попали в кратчайший путь
-            used_nodes, _ = bfs_color(i,j, graph,[])
+            used_nodes, _ = bfs_color(i,j, graph)
             if used_nodes == -1:
                 continue
             for v in used_nodes:
@@ -219,14 +192,7 @@ def choose_coverege(nodes, count_landmarks, graph):
         number_of_uses = {**number_of_uses, **uses_part}
     number_of_uses = sorted(number_of_uses, reverse=True)
     number_of_uses = number_of_uses[:landmarks_count]
-    return number_of_uses, (tm.datetime.now() - start_time).total_seconds()
-
-#------------------------------------------------------------
-
-
-
-#------------------------------------------------------------
-
+    return number_of_uses, (time.perf_counter() - start_time)
 
 def landmarks_choose (graph, nodes, selection, count_landmarks):
     if selection == 'random':
@@ -236,250 +202,261 @@ def landmarks_choose (graph, nodes, selection, count_landmarks):
     else:
         marks, timer_landmarks = choose_coverege(nodes, count_landmarks, graph)
     return marks, timer_landmarks
+#------------------------------------------------------------
 
+#-------------------функция для тестов-----------------------
+def test(file, results, graph, number_of_tests, start = '', finish = '', count_landmarks = LANDMARKS_COUNT, selection = ''):
+    marks_selection = ['random', 'degree', 'coverege']
+    graph_items = graph.items()
+    tic = time.perf_counter()
+    sort_degree = sorted(graph_items, key=lambda x: x[1]['degree'], reverse=True) 
+    nodes = [i[0] for i in sort_degree]
+    tic = time.perf_counter() - tic
+    graph_size = len(nodes)
+    if selection != '':
+        marks_selection = [selection]
+    if start == '':
+        nodes_random = nodes.copy()
+        random.shuffle(nodes_random)
+        nodes_start = nodes_random[:number_of_tests]
+        nodes_finish = nodes_random[graph_size - number_of_tests:]
+    else:
+        nodes_start = [start]
+        nodes_finish = [finish]
+    i = 1
+    for start, finish in zip(nodes_start,nodes_finish):
+        #if start == finish:
+        #    if start < graph_size-1:
+        #        start += 1
+        #    else:
+        #        start -= 1
+        print(i)
+        print ('start and finish: ', start, ' ', finish)
+        file.write(str(i))
+        i += 1
+        file.write('. start and finish: ')
+        file.write(str(start)) 
+        file.write(' ') 
+        file.write(str(finish)) 
+        file.write('\n')
+        s_path, timer_exact = bfs_color(start, finish, graph)
+        results['BFS'] += timer_exact
+        
+        print ('bfs done, time: ', timer_exact)
+        file.write('BFS \n\t path: ') 
+        file.write(str(s_path)) 
+        file.write('\n\t time: ') 
+        file.write(str(timer_exact)) 
+        file.write('\n')
+        file.write('Landmark-BFS and Landmark-basic \n')
+
+        for selection in marks_selection:
+            for landmarks_count in count_landmarks:
+
+                file.write('\t selection: ') 
+                file.write(selection) 
+                file.write('\n\t count landmarks: ') 
+                file.write(str(landmarks_count)) 
+                file.write('\n')
+                landmarks, timer_landmarks = landmarks_choose(graph, nodes, selection, landmarks_count)
+                timer_pathes = landmarks_pathes(start, finish, graph, landmarks)
+                results['Finding pathes'][selection][landmarks_count]['Time, sec'] += timer_pathes
+                results['Landmarks selection'][selection][landmarks_count]['Time, sec'] += timer_landmarks
+                if selection == 'degree':
+                    results['Landmarks selection'][selection][landmarks_count]['Time, sec'] += tic
+
+                file.write('\t landmarks: ')
+                file.write(str(landmarks))
+                file.write('\n\t time of choice landmarks: ')
+                file.write(str(timer_landmarks))
+                file.write('\n\t time of search pathes: ')
+                file.write(str(timer_pathes))
+                
+                print ('landmarks done, time: ', timer_landmarks)
+                path_bfs, timer_bfs = landmarks_bfs (start, finish, graph, landmarks)
+                results['Landmarks-BFS'][selection][landmarks_count]['Time, sec'] += timer_bfs
+
+                print ('landmarks_bfs done, time: ', timer_bfs)
+                file.write('\n\t Landmark-BFS \n\t\t path: ')
+                file.write(str(path_bfs)) 
+                file.write('\n\t\t time: ')
+                file.write(str(timer_bfs))
+
+                path_basic, timer_basic = landmarks_basic (start, finish, landmarks, graph)
+                results['Basic'][selection][landmarks_count]['Time, sec'] += timer_basic
+
+                print ('landmarks_basic done, time: ', timer_basic)
+                file.write('\n\t Landmark-basic \n\t\t path: ')
+                file.write(str(path_basic))
+                file.write('\n\t\t time: ')
+                file.write(str(timer_basic))
+                file.write('\n\n')
+
+                if path_bfs != -1:
+                    approximation_error_bfs = (len(path_bfs) - len(s_path))/len(s_path)
+                    results['Landmarks-BFS'][selection][landmarks_count]['Approximation error'] += approximation_error_bfs
+
+                if path_basic != -1:
+                    approximation_error_basic = (len(path_basic) - len(s_path))/len(s_path)
+                    results['Basic'][selection][landmarks_count]['Approximation error'] += approximation_error_basic
+
+    file.write('\n\n\n Average result')
+    results['BFS'] /= number_of_tests
+    file.write('\n\t BFS time: ')
+    file.write(str(results['BFS']))
+    for selection in marks_selection:
+        file.write('\n\t ')
+        file.write(selection)
+        for landmarks_count in count_landmarks:
+            file.write('\n\t\t ')
+            file.write(str(landmarks_count))
+            file.write(' landmarks')
+            results['Basic'][selection][landmarks_count]['Approximation error'] /= number_of_tests
+            results['Landmarks-BFS'][selection][landmarks_count]['Approximation error'] /= number_of_tests
+            results['Landmarks selection'][selection][landmarks_count]['Time, sec'] /= number_of_tests
+            results['Landmarks-BFS'][selection][landmarks_count]['Time, sec'] /= number_of_tests
+            results['Basic'][selection][landmarks_count]['Time, sec'] /= number_of_tests
+            results['Finding pathes'][selection][landmarks_count]['Time, sec'] /= number_of_tests
+            file.write('\n\t\t\t choose landmark time: ')
+            file.write(str(results['Landmarks selection'][selection][landmarks_count]['Time, sec']))
+            file.write('\n\t\t\t basic: accuracy: ')
+            file.write(str(results['Basic'][selection][landmarks_count]['Approximation error']))
+            file.write('\t time: ')
+            file.write(str(results['Basic'][selection][landmarks_count]['Time, sec']))
+            file.write('\n\t\t\t landmark-bfs: accuracy: ')
+            file.write(str(results['Landmarks-BFS'][selection][landmarks_count]['Approximation error']))
+            file.write('\t time: ')
+            file.write(str(results['Landmarks-BFS'][selection][landmarks_count]['Time, sec']))
+#------------------------------------------------------------
+
+#-------------------построение графиков-----------------------
+def create_histogram(results, method, characteristic):
+    name = str(method) + '_' + str(characteristic) + '.png'
+    x1 = np.arange(5, 16, 5) - 1
+    x2 = np.arange(5, 16, 5) + 1
+    x3 = np.arange(5, 16, 5)
+    bins = np.arange(5, 16, 5)
+    y1 = []
+    y2 = []
+    y3 = []
+
+    for count in LANDMARKS_COUNT:
+        y1.append(results[method][marks_selection[0]][count][characteristic])
+        y2.append(results[method][marks_selection[1]][count][characteristic])
+        y3.append(results[method][marks_selection[2]][count][characteristic])
+
+    fig, ax = plt.subplots()
+    ax.bar(x1, y1, width = 1, label=str(marks_selection[0]))
+    ax.bar(x3, y2, width = 1, label=str(marks_selection[1]))
+    ax.bar(x2, y3, width = 1, label=str(marks_selection[2]))
+    plt.xticks(bins)
+    ax.legend(fontsize = 14)
+    plt.tick_params(axis='both', which='major', labelsize=16)
+    plt.xlim([0, 20])
+    plt.xlabel('Number of Landmarks', fontsize = 20)
+    plt.ylabel(str(characteristic), fontsize = 20)
+    plt.title(str(method), fontsize=30)
+    fig.set_figwidth(12)    #  ширина Figure
+    fig.set_figheight(7)    #  высота Figure
+    fig.savefig(name)
+
+def create_plot(results, method, characteristic):
+    name = str(method) + '_' + str(characteristic) + '.png'
+    x = np.arange(5, 16, 5)
+    bins = np.arange(5, 16, 5)
+    y1 = []
+    y2 = []
+    y3 = []
+    y4 = []
+
+    for count in LANDMARKS_COUNT:
+        y1.append(results[method][marks_selection[0]][count][characteristic])
+        y2.append(results[method][marks_selection[1]][count][characteristic])
+        y3.append(results[method][marks_selection[2]][count][characteristic])
+        y4.append(results['BFS'])
+
+
+    fig, ax = plt.subplots()
+    plt.plot(x, y1, color='blue', label=str(marks_selection[0]))
+    plt.plot(x, y2, color='red', label=str(marks_selection[1]))
+    plt.plot(x, y3, color='green', label=str(marks_selection[2]))
+    if method != 'Landmarks selection' and method != 'Finding pathes':
+        plt.plot(x, y4, color = 'm', label='BFS (as standard)')
+    plt.xticks(bins)
+    ax.legend(fontsize = 14)
+    plt.tick_params(axis='both', which='major', labelsize=16)
+    #plt.xlim([-20, 140])
+    plt.xlabel('Number of Landmarks', fontsize = 20)
+    plt.ylabel(str(characteristic), fontsize = 20)
+    plt.title(str(method), fontsize=30)
+    fig.set_figwidth(12)    #  ширина Figure
+    fig.set_figheight(7)    #  высота Figure
+    fig.savefig(name)
 #------------------------------------------------------------
 
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------
 #основная часть
 import random
-import networkx as nx
+#import networkx as nx
 import collections
 
-marks_selection = ('random', 'degree', 'coverege')
-estimation_strategies = ('basic', 'landmarks_bfs')
+total_time = tm.datetime.now()
 
-"""[здесь будет словарь с ключом - количество марок и значениями: точность и время работы]"""
-results = {'basic':{
+marks_selection = ['random', 'degree', 'coverege']
+#estimation_strategies = ('basic', 'landmarks_bfs')
+
+results = {'Basic':{
                     'random': {}, 
                     'degree': {},
                     'coverege': {}
                  },
-        'landmarks_bfs': {
+        'Landmarks-BFS': {
             'random': {}, 
             'degree': {},
             'coverege': {}
             },
-        'bfs': 0,
-        'choose_landmarks': {
+        'BFS': 0,
+        'Landmarks selection': {
             'random': {}, 
+            'degree': {},
+            'coverege': {}
+            },
+        'Finding pathes': {
+            'random': {},
             'degree': {},
             'coverege': {}
             }
          }
 for i in LANDMARKS_COUNT:
     for j in marks_selection:
-        results['basic'][j][i] = {'time': 0, 'accuracy': 0}
-        results['landmarks_bfs'][j][i] = {'time': 0, 'accuracy': 0}
-        results['choose_landmarks'][j][i] = {'time': 0}
+        results['Basic'][j][i] = {'Time, sec': 0, 'Approximation error': 0}
+        results['Landmarks-BFS'][j][i] = {'Time, sec': 0, 'Approximation error': 0}
+        results['Landmarks selection'][j][i] = {'Time, sec': 0}
+        results['Finding pathes'][j][i] = {'Time, sec': 0}
 
 
-with open('results_1.txt', 'w') as file:
+with open('results_vk.txt', 'w') as file:
     
-
     graph = read_from_txt(FILENAME)
-    graph_items = graph.items()
-    tic = tm.datetime.now()
-    sort_degree = sorted(graph_items, key=lambda x: x[1]['degree'], reverse=True) 
-    nodes = [i[0] for i in sort_degree]
-    tic = tm.datetime.now() - tic
-    graph_size = len(nodes)
-    
-
-
-
-    number_of_tests = 1
-
-
-    #выбор начальных и конечных вершин
-
-    nodes_random = nodes.copy()
-    random.shuffle(nodes_random)
-    nodes_start = nodes_random[:number_of_tests]
-    nodes_finish = nodes_random[graph_size - number_of_tests:]
-
-
+    number_of_tests = 5
 
     #для тестов с заданными вершинами
 
     #test(graph, 1, nodes, 20, 'random',  [9481, 69904, 16093, 122877, 32410, 104288, 92189, 55511, 105439, 33781, 80576, 58060, 70830, 18009, 105595, 89838, 30224, 84205, 95646, 124599], 24842 , 102498)
     #test(graph, 1, nodes, 20, 'random')
 
+    test(file, results, graph, number_of_tests) #простой запуск (все варианты для случайных start и finish)
 
-
-    #запуск алгоритмов с разными параметрами
-    for start, finish in zip(nodes_start,nodes_finish):
-
-        if start == finish:
-            if start < graph_size-1:
-                start += 1
-            else:
-                start -= 1
-
-        print ('start and finish: ', start, ' ', finish)
-
-        s_path, timer_exact = bfs_color(start, finish, graph, [])
-        results['bfs'] += timer_exact
-        
-        print ('bfs done, time: ', timer_exact)
-
-        for selection in marks_selection:
-            for landmarks_count in LANDMARKS_COUNT:
-
-
-                landmarks, timer_landmarks = landmarks_choose (graph, nodes, selection, landmarks_count)
-                landmarks_pathes (start, finish, graph, landmarks)
-                results['choose_landmarks'][selection][landmarks_count]['time'] += timer_landmarks
-                if selection == 'degree':
-                    results['choose_landmarks'][selection][landmarks_count]['time'] += tic.total_seconds()
-
-                print ('landmarks done, time: ', timer_landmarks)
-
-                path_bfs, timer_bfs = landmarks_bfs (start, finish, graph, landmarks)
-                results['landmarks_bfs'][selection][landmarks_count]['time'] += timer_bfs
-
-                print ('landmarks_bfs done, time: ', timer_bfs)
-
-                path_basic, timer_basic = landmarks_basic (start, finish, landmarks, graph)
-                results['basic'][selection][landmarks_count]['time'] += timer_basic
-
-                print ('landmarks_basic done, time: ', timer_basic)
-
-                if path_bfs != -1:
-                    approximation_error_bfs = (len(path_bfs) - len(s_path))/len(s_path)
-                    results['landmarks_bfs'][selection][landmarks_count]['accuracy'] += approximation_error_bfs
-
-                if path_basic != -1:
-                    approximation_error_basic = (len(path_basic) - len(s_path))/len(s_path)
-                    results['basic'][selection][landmarks_count]['accuracy'] += approximation_error_basic
-
-for selection in marks_selection:
-    for landmarks_count in LANDMARKS_COUNT:
-        results['basic'][selection][landmarks_count]['accuracy'] /= number_of_tests
-        results['landmarks_bfs'][selection][landmarks_count]['accuracy'] /= number_of_tests
-        results['choose_landmarks'][selection][landmarks_count]['time'] /= number_of_tests
-        results['landmarks_bfs'][selection][landmarks_count]['time'] /= number_of_tests
-        results['basic'][selection][landmarks_count]['time'] /= number_of_tests
-results['bfs'] /= number_of_tests
-            
-import matplotlib
-matplotlib.use('Qt5Agg')
-import matplotlib.pyplot as plt
-
-
-
-
-x = []
-y_basic_random_time = []
-y_basic_degree_time = []
-y_basic_coverege_time = []
-y_landmarks_bfs_random_time = []
-y_landmarks_bfs_degree_time = []
-y_landmarks_bfs_coverege_time = []
-y_bfs_random_time = []
-y_bfs_degree_time = []
-y_bfs_coverege_time = []
-y_choose_landmarks_random_time = []
-y_choose_landmarks_degree_time = []
-y_choose_landmarks_coverege_time = []
-
-y_basic_random_accuracy = []
-y_basic_degree_accuracy = []
-y_basic_coverege_accuracy = []
-y_landmarks_bfs_random_accuracy = []
-y_landmarks_bfs_degree_accuracy = []
-y_landmarks_bfs_coverege_accuracy = []
-y_bfs_random_accuracy = []
-y_bfs_degree_accuracy = []
-y_bfs_coverege_accuracy = []
-y_choose_landmarks_random_accuracy = []
-y_choose_landmarks_degree_accuracy = []
-y_choose_landmarks_coverege_accuracy = []
-
-for count in LANDMARKS_COUNT:
-    x.append(count)
-    y_basic_random_time.append(results['basic']['random'][count]['time'])
-    y_basic_degree_time.append(results['basic']['degree'][count]['time'])
-    y_basic_coverege_time.append(results['basic']['coverege'][count]['time'])###########################################################
-    y_landmarks_bfs_random_time.append(results['landmarks_bfs']['random'][count]['time'])
-    y_landmarks_bfs_degree_time.append(results['landmarks_bfs']['degree'][count]['time'])
-    y_landmarks_bfs_coverege_time.append(results['landmarks_bfs']['coverege'][count]['time'])###########################################################
-    y_bfs_random_time.append(results['bfs'])
-    y_bfs_degree_time.append(results['bfs'])
-    y_bfs_coverege_time.append(results['bfs'])###########################################################
-    y_choose_landmarks_random_time.append(results['choose_landmarks']['random'][count]['time'])
-    y_choose_landmarks_degree_time.append(results['choose_landmarks']['degree'][count]['time'])
-    y_choose_landmarks_coverege_time.append(results['choose_landmarks']['coverege'][count]['time'])###########################################################
-
-    y_basic_random_accuracy.append(results['basic']['random'][count]['accuracy'])
-    y_basic_degree_accuracy.append(results['basic']['degree'][count]['accuracy'])
-    y_basic_coverege_accuracy.append(results['basic']['coverege'][count]['accuracy'])###########################################################
-    y_landmarks_bfs_random_accuracy.append(results['landmarks_bfs']['random'][count]['accuracy'])
-    y_landmarks_bfs_degree_accuracy.append(results['landmarks_bfs']['degree'][count]['accuracy'])
-    y_landmarks_bfs_coverege_accuracy.append(results['landmarks_bfs']['coverege'][count]['accuracy'])###########################################################
-
-
-
-fig, ax = plt.subplots()
-plt.plot(x, y_basic_random_time, color='blue')
-plt.plot(x, y_basic_degree_time, color='red')
-plt.plot(x, y_basic_coverege_time, color='green')
-plt.xlabel('Количество марок')
-plt.ylabel('Время работы')
-plt.title('Время работы basic алгоритма на марках для разных стратегий', fontsize=30)
-plt.legend(['random landmarks', 'degree landmarks', 'coverage landmarks'])
-
-
-fig, ax = plt.subplots()
-plt.plot(x, y_landmarks_bfs_random_time, color='blue')
-plt.plot(x, y_landmarks_bfs_degree_time, color='red')
-plt.plot(x, y_landmarks_bfs_coverege_time, color='green')
-plt.xlabel('Количество марок')
-plt.ylabel('Время работы')
-plt.title('Время работы landmarks_bfs алгоритма на марках для разных стратегий', fontsize=30)
-plt.legend(['random landmarks', 'degree landmarks', 'coverage landmarks'])
-
-
-fig, ax = plt.subplots()
-plt.plot(x, y_bfs_random_time, color='blue')
-plt.plot(x, y_bfs_degree_time, color='red')
-plt.plot(x, y_bfs_coverege_time, color='green')
-plt.xlabel('Количество марок')
-plt.ylabel('Время работы')
-plt.title('Время работы простого bfs алгоритма на марках для разных стратегий', fontsize=30)
-plt.legend(['random landmarks', 'degree landmarks', 'coverage landmarks'])
-
-
-fig, ax = plt.subplots()
-plt.plot(x, y_choose_landmarks_random_time, color='blue')
-plt.plot(x, y_choose_landmarks_degree_time, color='red')
-plt.plot(x, y_choose_landmarks_coverege_time, color='green')
-plt.xlabel('Количество марок')
-plt.ylabel('Время работы')
-plt.title('Время выбора марок для разных стратегий', fontsize=30)
-plt.legend(['random landmarks', 'degree landmarks', 'coverage landmarks'])
-
-
-fig, ax = plt.subplots()
-plt.plot(x, y_basic_random_accuracy, color='blue')
-plt.plot(x, y_basic_degree_accuracy, color='red')
-plt.plot(x, y_basic_coverege_accuracy, color='green')
-plt.xlabel('Количество марок')
-plt.ylabel('Точность')
-plt.title('Точность basic алгоритма на марках для разных стратегий', fontsize=30)
-plt.legend(['random landmarks', 'degree landmarks', 'coverage landmarks'])
-
-
-fig, ax = plt.subplots()
-plt.plot(x, y_landmarks_bfs_random_accuracy, color='blue')
-plt.plot(x, y_landmarks_bfs_degree_accuracy, color='red')
-plt.plot(x, y_landmarks_bfs_coverege_accuracy, color='green')
-plt.xlabel('Количество марок')
-plt.ylabel('Точность')
-plt.title('Точность landmarks_bfs алгоритма на марках для разных стратегий', fontsize=30)
-plt.legend(['random landmarks', 'degree landmarks', 'coverage landmarks'])
-
-
-
+total_time = tm.datetime.now() - total_time
+print('Total time: ', total_time)
+create_plot(results, 'Basic', 'Time, sec')
+create_plot(results, 'Landmarks-BFS', 'Time, sec')
+create_plot(results, 'Landmarks selection', 'Time, sec')
+create_plot(results, 'Finding pathes', 'Time, sec')
+create_histogram(results, 'Basic', 'Approximation error')
+create_histogram(results, 'Landmarks-BFS', 'Approximation error')
 
 plt.show()
+
+
