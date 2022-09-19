@@ -1,5 +1,5 @@
-FILENAME = 'vk2.txt'
-LANDMARKS_COUNT = range(5, 16, 5)
+FILENAME = 'test_socfb-Reed98.txt'
+LANDMARKS_COUNT = range (20, 101, 40)
 import datetime as tm
 import time
 import random
@@ -205,7 +205,8 @@ def landmarks_choose (graph, nodes, selection, count_landmarks):
 #------------------------------------------------------------
 
 #-------------------функция для тестов-----------------------
-def test(file, results, graph, number_of_tests, start = '', finish = '', count_landmarks = LANDMARKS_COUNT, selection = ''):
+def test(file, results, graph, number_of_tests, start = '', finish = '', selections = ''):
+    count_landmarks = LANDMARKS_COUNT
     marks_selection = ['random', 'degree', 'coverege']
     graph_items = graph.items()
     tic = time.perf_counter()
@@ -213,8 +214,8 @@ def test(file, results, graph, number_of_tests, start = '', finish = '', count_l
     nodes = [i[0] for i in sort_degree]
     tic = time.perf_counter() - tic
     graph_size = len(nodes)
-    if selection != '':
-        marks_selection = [selection]
+    if selections != '':
+        marks_selection = selections
     if start == '':
         nodes_random = nodes.copy()
         random.shuffle(nodes_random)
@@ -330,29 +331,44 @@ def test(file, results, graph, number_of_tests, start = '', finish = '', count_l
 #------------------------------------------------------------
 
 #-------------------построение графиков-----------------------
-def create_histogram(results, method, characteristic):
+def create_histogram(results, method, characteristic, marks_selection):
     name = str(method) + '_' + str(characteristic) + '.png'
-    x1 = np.arange(5, 16, 5) - 1
-    x2 = np.arange(5, 16, 5) + 1
-    x3 = np.arange(5, 16, 5)
-    bins = np.arange(5, 16, 5)
+    step = (LANDMARKS_COUNT[-1] - LANDMARKS_COUNT[0])/max((len(LANDMARKS_COUNT)-1),1)
+    x1 = np.array(LANDMARKS_COUNT) - step/4
+    x2 = np.array(LANDMARKS_COUNT) + step/4
+    x3 = np.array(LANDMARKS_COUNT)
+    bins = np.array(LANDMARKS_COUNT)
     y1 = []
     y2 = []
     y3 = []
 
     for count in LANDMARKS_COUNT:
-        y1.append(results[method][marks_selection[0]][count][characteristic])
-        y2.append(results[method][marks_selection[1]][count][characteristic])
-        y3.append(results[method][marks_selection[2]][count][characteristic])
+        if len(marks_selection) == 1:
+            y1.append(results[method][marks_selection[0]][count][characteristic])
+        elif len(marks_selection) == 2:
+            y1.append(results[method][marks_selection[0]][count][characteristic])
+            y2.append(results[method][marks_selection[1]][count][characteristic])
+        else:
+            y1.append(results[method][marks_selection[0]][count][characteristic])
+            y2.append(results[method][marks_selection[1]][count][characteristic])
+            y3.append(results[method][marks_selection[2]][count][characteristic])
 
+    if step == 0:
+        step = 5
     fig, ax = plt.subplots()
-    ax.bar(x1, y1, width = 1, label=str(marks_selection[0]))
-    ax.bar(x3, y2, width = 1, label=str(marks_selection[1]))
-    ax.bar(x2, y3, width = 1, label=str(marks_selection[2]))
+    if len(marks_selection) == 1:
+        ax.bar(x3, y1, width = step/4, label=str(marks_selection[0]))
+    elif len(marks_selection) == 2:
+        ax.bar(x1 + step/8, y1, width = step/4, label=str(marks_selection[0]))
+        ax.bar(x2 - step/8, y2, width = step/4, label=str(marks_selection[1]))
+    else:
+        ax.bar(x1, y1, width = step/4, label=str(marks_selection[0]))
+        ax.bar(x3, y2, width = step/4, label=str(marks_selection[1]))
+        ax.bar(x2, y3, width = step/4, label=str(marks_selection[2]))
     plt.xticks(bins)
     ax.legend(fontsize = 14)
     plt.tick_params(axis='both', which='major', labelsize=16)
-    plt.xlim([0, 20])
+    plt.xlim([LANDMARKS_COUNT[0] - step, LANDMARKS_COUNT[-1] + step])
     plt.xlabel('Number of Landmarks', fontsize = 20)
     plt.ylabel(str(characteristic), fontsize = 20)
     plt.title(str(method), fontsize=30)
@@ -360,32 +376,43 @@ def create_histogram(results, method, characteristic):
     fig.set_figheight(7)    #  высота Figure
     fig.savefig(name)
 
-def create_plot(results, method, characteristic):
+def create_plot(results, method, characteristic, marks_selection):
     name = str(method) + '_' + str(characteristic) + '.png'
-    x = np.arange(5, 16, 5)
-    bins = np.arange(5, 16, 5)
+    x = np.array(LANDMARKS_COUNT)
+    bins = np.array(LANDMARKS_COUNT)
     y1 = []
     y2 = []
     y3 = []
     y4 = []
 
     for count in LANDMARKS_COUNT:
-        y1.append(results[method][marks_selection[0]][count][characteristic])
-        y2.append(results[method][marks_selection[1]][count][characteristic])
-        y3.append(results[method][marks_selection[2]][count][characteristic])
+        if len(marks_selection) == 1:
+            y1.append(results[method][marks_selection[0]][count][characteristic])
+        elif len(marks_selection) == 2:
+            y1.append(results[method][marks_selection[0]][count][characteristic])
+            y2.append(results[method][marks_selection[1]][count][characteristic])
+        else:
+            y1.append(results[method][marks_selection[0]][count][characteristic])
+            y2.append(results[method][marks_selection[1]][count][characteristic])
+            y3.append(results[method][marks_selection[2]][count][characteristic])
         y4.append(results['BFS'])
 
 
     fig, ax = plt.subplots()
-    plt.plot(x, y1, color='blue', label=str(marks_selection[0]))
-    plt.plot(x, y2, color='red', label=str(marks_selection[1]))
-    plt.plot(x, y3, color='green', label=str(marks_selection[2]))
+    if len(marks_selection) == 1:
+        plt.plot(x, y1, '-bo', label=str(marks_selection[0]))
+    elif len(marks_selection) == 2:
+        plt.plot(x, y1, '-bo', label=str(marks_selection[0]))
+        plt.plot(x, y2, '-ro', label=str(marks_selection[1]))
+    else:
+        plt.plot(x, y1, '-bo', label=str(marks_selection[0]))
+        plt.plot(x, y2, '-ro', label=str(marks_selection[1]))
+        plt.plot(x, y3, '-go', label=str(marks_selection[2]))
     if method != 'Landmarks selection' and method != 'Finding pathes':
-        plt.plot(x, y4, color = 'm', label='BFS (as standard)')
+        plt.plot(x, y4, '-mo', label='BFS (as standard)')
     plt.xticks(bins)
     ax.legend(fontsize = 14)
     plt.tick_params(axis='both', which='major', labelsize=16)
-    #plt.xlim([-20, 140])
     plt.xlabel('Number of Landmarks', fontsize = 20)
     plt.ylabel(str(characteristic), fontsize = 20)
     plt.title(str(method), fontsize=30)
@@ -428,6 +455,8 @@ results = {'Basic':{
             'coverege': {}
             }
          }
+if type(LANDMARKS_COUNT) == int:
+    LANDMARKS_COUNT = [LANDMARKS_COUNT]
 for i in LANDMARKS_COUNT:
     for j in marks_selection:
         results['Basic'][j][i] = {'Time, sec': 0, 'Approximation error': 0}
@@ -435,28 +464,25 @@ for i in LANDMARKS_COUNT:
         results['Landmarks selection'][j][i] = {'Time, sec': 0}
         results['Finding pathes'][j][i] = {'Time, sec': 0}
 
-
 with open('results_vk.txt', 'w') as file:
     
     graph = read_from_txt(FILENAME)
-    number_of_tests = 5
+    number_of_tests = 1
 
     #для тестов с заданными вершинами
+    #test(file, results, graph, """количество тестов""" 1, """start""" 1, """finish""" 200, """способ выбора марок""" ['random', 'degree', 'coverege'])
 
-    #test(graph, 1, nodes, 20, 'random',  [9481, 69904, 16093, 122877, 32410, 104288, 92189, 55511, 105439, 33781, 80576, 58060, 70830, 18009, 105595, 89838, 30224, 84205, 95646, 124599], 24842 , 102498)
-    #test(graph, 1, nodes, 20, 'random')
+    marks_selection = ['degree', 'coverege']
+    test(file, results, graph, 1, 1, 200, marks_selection)
 
-    test(file, results, graph, number_of_tests) #простой запуск (все варианты для случайных start и finish)
+    #test(file, results, graph, number_of_tests) #простой запуск (все варианты для случайных start и finish)
 
 total_time = tm.datetime.now() - total_time
 print('Total time: ', total_time)
-create_plot(results, 'Basic', 'Time, sec')
-create_plot(results, 'Landmarks-BFS', 'Time, sec')
-create_plot(results, 'Landmarks selection', 'Time, sec')
-create_plot(results, 'Finding pathes', 'Time, sec')
-create_histogram(results, 'Basic', 'Approximation error')
-create_histogram(results, 'Landmarks-BFS', 'Approximation error')
-
+create_plot(results, 'Basic', 'Time, sec', marks_selection)
+create_plot(results, 'Landmarks-BFS', 'Time, sec', marks_selection)
+create_plot(results, 'Landmarks selection', 'Time, sec', marks_selection)
+create_plot(results, 'Finding pathes', 'Time, sec', marks_selection)
+create_histogram(results, 'Basic', 'Approximation error', marks_selection)
+create_histogram(results, 'Landmarks-BFS', 'Approximation error', marks_selection)
 plt.show()
-
-
