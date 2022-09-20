@@ -5,6 +5,7 @@ import time
 import random
 import csv
 import collections
+from collections import deque
 import numpy as np
 import matplotlib
 #matplotlib.use('Qt5Agg')
@@ -64,13 +65,12 @@ def bfs_color(start, finish, graph, write = False):
     for i in graph:
         graph[i]['visit'] = 0
     graph[start]['visit'] = 1
-    found = False
-    queue = [start]
+    queue = deque()
+    queue.append(start)
     pathes = {}
     pathes [start] = [start]
     while queue:
-        a = queue[0]
-        queue.pop(0)
+        a = queue.popleft()
         for i in graph[a]['linked']:
             if graph[i]['visit'] == 0:
                 graph[i]['visit'] = 1
@@ -80,7 +80,6 @@ def bfs_color(start, finish, graph, write = False):
                 pathes[i] = []
                 pathes[i] = p
                 if i == finish:
-                    found = True
                     path = pathes[i]
                     if write:
                         graph[start]['shortest_pathes'][i] = path
@@ -190,7 +189,7 @@ def choose_coverege(nodes, landmarks_count, graph):
                 else:
                     uses_part[v] += 1
         number_of_uses = {**number_of_uses, **uses_part}
-    number_of_uses = sorted(number_of_uses, reverse=True)
+    number_of_uses = sorted(number_of_uses, key=lambda x: number_of_uses[x], reverse=True)
     number_of_uses = number_of_uses[:landmarks_count]
     return number_of_uses, (time.perf_counter() - start_time)
 
@@ -464,7 +463,7 @@ for i in LANDMARKS_COUNT:
         results['Landmarks selection'][j][i] = {'Time, sec': 0}
         results['Finding pathes'][j][i] = {'Time, sec': 0}
 
-with open('results_vk.txt', 'w') as file:
+with open('results.txt', 'w') as file:
     
     graph = read_from_txt(FILENAME)
     number_of_tests = 1
@@ -472,7 +471,7 @@ with open('results_vk.txt', 'w') as file:
     #для тестов с заданными вершинами
     #test(file, results, graph, """количество тестов""" 1, """start""" 1, """finish""" 200, """способ выбора марок""" ['random', 'degree', 'coverege'])
 
-    marks_selection = ['degree', 'coverege']
+    marks_selection = ['random', 'degree', 'coverege']
     test(file, results, graph, 1, 1, 200, marks_selection)
 
     #test(file, results, graph, number_of_tests) #простой запуск (все варианты для случайных start и finish)
