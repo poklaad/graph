@@ -63,3 +63,6 @@ common_territories.sort()
 print(", ".join(common_territories))
 
 15. 
+for ruler, country in rulers.items():
+    if country == country_to_search:
+        print(ruler)
