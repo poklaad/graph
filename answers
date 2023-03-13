@@ -19,6 +19,8 @@ if century == "XXI":
     print(present)
 else:
     print(past)
+    
+    
 10.
 year = int(input())
 
@@ -28,4 +30,17 @@ while year != 0:
     else:
         print(second)
     year = int(input())
+    
+    
 11. 
+if name not in historical_figures:
+    historical_figures.append(name)
+
+historical_figures.sort()
+print(historical_figures)
+
+
+12. 
+for year in years:
+    if year > filteryear:
+        print(year)
