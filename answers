@@ -50,3 +50,16 @@ for i in range(len(names)):
     name = names[i]
     year = years[i].split('-')[0]
     print(f"Император: {name}, начало правления: {year}")
+
+14. 
+common_territories = []
+
+for country in territory_A:
+    if country in territory_B:
+        common_territories.append(country)
+
+common_territories.sort()
+
+print(", ".join(common_territories))
+
+15. 
