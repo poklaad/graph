@@ -44,3 +44,9 @@ print(historical_figures)
 for year in years:
     if year > filteryear:
         print(year)
+        
+13. 
+for i in range(len(names)):
+    name = names[i]
+    year = years[i].split('-')[0]
+    print(f"Император: {name}, начало правления: {year}")
