@@ -66,3 +66,11 @@ print(", ".join(common_territories))
 for ruler, country in rulers.items():
     if country == country_to_search:
         print(ruler)
+        
+16. 
+def get_years(name, years):
+    ruling_years = years[1] - years[0]
+    if ruling_years >= 10:
+        return name
+    else:
+        return f"Император {name} правил менее 10 лет"
