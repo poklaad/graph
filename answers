@@ -14,4 +14,18 @@ print(regions)
 8. В строке [4] отсутствует запятая между значениями, которые возвращает функция get_name_year()
 
 Часть В
-1. 
+9. 
+if century == "XXI":
+    print(present)
+else:
+    print(past)
+10.
+year = int(input())
+
+while year != 0:
+    if year % 100 < 50 and year % 100 != 0:
+        print(first)
+    else:
+        print(second)
+    year = int(input())
+11. 
